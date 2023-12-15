@@ -28,3 +28,85 @@ This analysis utilizes satellite data to estimate the normalized difference vege
 credit: this post is based on a materials developed by Chris Kibler, with additional assistance from Ruth Oliver
 
 ## About the Data
+
+### River Data
+
+A shape file of rivers in Ventura County is publicly available via the [Ventura County Watershed Protection District](https://ventura-county-watershed-protection-district-gis-data-vcwpd.hub.arcgis.com/search).
+
+### Landsat Data
+
+The data that will be used to calculate NDVI is from the Landsat Operational Land Imager (OLI) sensor. There are 8 total landsat `.tif` files which contain level 3 surface reflectance products where erroneous values were set to NA, scale factor is set to 100, and bands 2-7 are present. The date of collection is at the end of each file name.
+
+### Study Sites
+
+Study sites are available as vector data (polygons) with character strings as the plant type. This data will be used to classify the plant communities of interest.
+
+## Compute Initial NDVI
+
+NDVI was computed for all 8 Landsat images. The date range is between June 2018 and July, 2019. Ideally this will provide an accurate estimate of annual phonological changes in NDVI.
+
+```{r, echo=FALSE}
+library(terra)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(here)
+library(tmap)
+```
+
+```{r, echo=FALSE}
+1+1
+```
+
+**Preparation:**
+
+```{r, results='hide'}
+# create NDVI function
+ndvi_fun = function(nir, red){
+  (nir - red) / (nir + red)
+}
+
+# create list of landsat files
+landsat_files <- list.files(here("data"), pattern = "*.tif", full.names = TRUE)
+```
+
+**NDVI Across Scenes:**
+
+```{r}
+#function reads in data, renames bands, and calc NDVI
+create_ndvi_layer <- function(i){
+  landsat <- rast(landsat_files[i]) #read in data 
+  names(landsat) <- c("blue", "green", "red", "NIR", "SWIR1", "SWIR2") #rename bands
+  ndvi <- lapp(landsat[[c(4, 3)]], fun = ndvi_fun) #NDVI
+}
+
+# stack raster with NDVI data using function above
+all_ndvi <- c(create_ndvi_layer(1),
+              create_ndvi_layer(2),
+              create_ndvi_layer(3),
+              create_ndvi_layer(4),
+              create_ndvi_layer(5),
+              create_ndvi_layer(6),
+              create_ndvi_layer(7),
+              create_ndvi_layer(8))
+
+# add dates to corresponding layer
+names(all_ndvi) <- c("2018-06-12",
+                     "2018-08-15",
+                     "2018-10-18",
+                     "2018-11-03",
+                     "2019-01-22",
+                     "2019-02-23",
+                     "2019-04-12",
+                     "2019-07-01")
+```
+
+## Map Study Sites Along River
+
+eep
+
+```{r}
+
+```
