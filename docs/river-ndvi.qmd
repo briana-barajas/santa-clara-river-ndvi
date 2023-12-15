@@ -48,16 +48,25 @@ NDVI was computed for all 8 Landsat images. The date range is between June 2018 
 ```{r, echo=FALSE}
 library(terra)
 library(sf)
-library(dplyr)
-library(tidyr)
-library(stringr)
+library(tidyverse)
 library(ggplot2)
 library(here)
-library(tmap)
 ```
 
 ```{r, echo=FALSE}
-1+1
+# read in study sites
+study_sites <- st_read(here("data","study_sites.shp"))
+
+# read in river lines
+vc_rivers <- st_read(here("data","Redlines", "Redlines.shp")) %>% 
+  st_transform(crs = "epsg:32611")
+
+# read in single tiff
+single_landsat_rast <- rast(here('data','landsat_20180612.tif'))
+
+# load US county data
+states <- st_read(here("data", "CA_Counties","CA_Counties_TIGER2016.shp")) %>%
+  st_transform(crs = "epsg:32611")
 ```
 
 **Preparation:**
@@ -73,6 +82,8 @@ landsat_files <- list.files(here("data"), pattern = "*.tif", full.names = TRUE)
 ```
 
 **NDVI Across Scenes:**
+
+In order to facilitate NDVI calculation, the function below is designed to read in all raster files, rename their bands, and calculate NDVI. Once all NDVI's were calculated, they were stacked and assigned names that corresponded to their date.
 
 ```{r}
 #function reads in data, renames bands, and calc NDVI
@@ -103,10 +114,48 @@ names(all_ndvi) <- c("2018-06-12",
                      "2019-07-01")
 ```
 
-## Map Study Sites Along River
+## Exploratory Maps
 
-eep
+**True Color Image:**
+
+Assessing true color imagery before NDVI can be useful for quickly recognizing different types of terrain. Here, I created a simple true color image of the Santa Clara River area using one of a single Landsat from June, 2018.
 
 ```{r}
+# create a true color image
+plotRGB(single_landsat_rast, 3, 2, 1, stretch="hist",
+        main = "Santa Clara River True Color Image")
+```
 
+**Study Site Location Along Santa Clara Watershed:**
+
+The following visualization depicts the Santa Clara River, as well as other rivers within the Santa Clara Watershed. The plant communities (study sites), were added as well for geographical context.
+
+```{r}
+## ========== Data Preparation ==========
+# filter VC river data to SC watershed
+sc_watershed <- vc_rivers %>% 
+  filter(WATERSHED == "SANTA CLARA RIVER WATERSHED") %>% #filter
+  st_transform(crs = 'epsg:32611') %>% #reproject
+  st_crop(study_sites)
+
+# filter state data to counties new watershed
+ventura <- states %>% st_crop(study_sites) #crop county to watershed
+
+# create custom color palette
+phenology_pal <- c("#EAAC8B", "#315C2B", "#315C2B", "#315C2B","#9EA93F")
+
+## ========== Plot Data Together ==========
+# create map combining watershed, study sites, and counties
+ggplot() +
+  geom_sf(data = ventura, fill = '#E7DED9') +
+  geom_sf(data = sc_watershed, color = 'dodgerblue') +
+  geom_sf(data = study_sites,
+          mapping = aes(fill = study_site)) +
+  scale_fill_manual(values = c("#EAAC8B", "#315C2B", "#315C2B", "#315C2B","#9EA93F")) +
+  labs(title = "Study Sites Along Santa Clara Watershed",
+       fill = "Plant Communities",
+       x=NULL,
+       y=NULL) +
+  theme(panel.background = element_rect(fill='lightblue'),
+        plot.margin=grid::unit(c(0,0,0,0), "mm"))
 ```

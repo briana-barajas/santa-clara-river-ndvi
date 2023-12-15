@@ -139,58 +139,135 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>NDVI was computed for all 8 Landsat images. The date range is between June 2018 and July, 2019. Ideally this will provide an accurate estimate of annual phonological changes in NDVI.</p>
 <div class="cell">
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 2</code></pre>
+<pre><code>Reading layer `study_sites' from data source 
+  `/Users/bri_b/Documents/School/F23/eds-223/assignments/santa-clara-river-ndvi/data/study_sites.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 5 features and 1 field
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 314413.3 ymin: 3803180 xmax: 353848.7 ymax: 3811694
+Projected CRS: WGS 84 / UTM zone 11N</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `Redlines' from data source 
+  `/Users/bri_b/Documents/School/F23/eds-223/assignments/santa-clara-river-ndvi/data/Redlines/Redlines.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 447 features and 10 fields
+Geometry type: MULTILINESTRING
+Dimension:     XY
+Bounding box:  xmin: -119.4783 ymin: 34.05312 xmax: -118.6388 ymax: 34.81258
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `CA_Counties_TIGER2016' from data source 
+  `/Users/bri_b/Documents/School/F23/eds-223/assignments/santa-clara-river-ndvi/data/CA_Counties/CA_Counties_TIGER2016.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 58 features and 17 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: -13857270 ymin: 3832931 xmax: -12705030 ymax: 5162404
+Projected CRS: WGS 84 / Pseudo-Mercator</code></pre>
 </div>
 </div>
 <p><strong>Preparation:</strong></p>
 <div class="cell">
 <details>
 <summary>View Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create NDVI function</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ndvi_fun <span class="ot">=</span> <span class="cf">function</span>(nir, red){</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  (nir <span class="sc">-</span> red) <span class="sc">/</span> (nir <span class="sc">+</span> red)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># create list of landsat files</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>landsat_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data"</span>), <span class="at">pattern =</span> <span class="st">"*.tif"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create NDVI function</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ndvi_fun <span class="ot">=</span> <span class="cf">function</span>(nir, red){</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  (nir <span class="sc">-</span> red) <span class="sc">/</span> (nir <span class="sc">+</span> red)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># create list of landsat files</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>landsat_files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"data"</span>), <span class="at">pattern =</span> <span class="st">"*.tif"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p><strong>NDVI Across Scenes:</strong></p>
+<p>In order to facilitate NDVI calculation, the function below is designed to read in all raster files, rename their bands, and calculate NDVI. Once all NDVI’s were calculated, they were stacked and assigned names that corresponded to their date.</p>
 <div class="cell">
 <details>
 <summary>View Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#function reads in data, renames bands, and calc NDVI</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>create_ndvi_layer <span class="ot">&lt;-</span> <span class="cf">function</span>(i){</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  landsat <span class="ot">&lt;-</span> <span class="fu">rast</span>(landsat_files[i]) <span class="co">#read in data </span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(landsat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"blue"</span>, <span class="st">"green"</span>, <span class="st">"red"</span>, <span class="st">"NIR"</span>, <span class="st">"SWIR1"</span>, <span class="st">"SWIR2"</span>) <span class="co">#rename bands</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  ndvi <span class="ot">&lt;-</span> <span class="fu">lapp</span>(landsat[[<span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">3</span>)]], <span class="at">fun =</span> ndvi_fun) <span class="co">#NDVI</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># stack raster with NDVI data using function above</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>all_ndvi <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">create_ndvi_layer</span>(<span class="dv">1</span>),</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">2</span>),</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">3</span>),</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">4</span>),</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">5</span>),</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">6</span>),</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">7</span>),</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">8</span>))</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># add dates to corresponding layer</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(all_ndvi) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"2018-06-12"</span>,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2018-08-15"</span>,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2018-10-18"</span>,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2018-11-03"</span>,</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-01-22"</span>,</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-02-23"</span>,</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-04-12"</span>,</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-07-01"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#function reads in data, renames bands, and calc NDVI</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>create_ndvi_layer <span class="ot">&lt;-</span> <span class="cf">function</span>(i){</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  landsat <span class="ot">&lt;-</span> <span class="fu">rast</span>(landsat_files[i]) <span class="co">#read in data </span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(landsat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"blue"</span>, <span class="st">"green"</span>, <span class="st">"red"</span>, <span class="st">"NIR"</span>, <span class="st">"SWIR1"</span>, <span class="st">"SWIR2"</span>) <span class="co">#rename bands</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  ndvi <span class="ot">&lt;-</span> <span class="fu">lapp</span>(landsat[[<span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">3</span>)]], <span class="at">fun =</span> ndvi_fun) <span class="co">#NDVI</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># stack raster with NDVI data using function above</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>all_ndvi <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">create_ndvi_layer</span>(<span class="dv">1</span>),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">2</span>),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">3</span>),</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">4</span>),</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">5</span>),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">6</span>),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">7</span>),</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>              <span class="fu">create_ndvi_layer</span>(<span class="dv">8</span>))</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co"># add dates to corresponding layer</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(all_ndvi) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"2018-06-12"</span>,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2018-08-15"</span>,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2018-10-18"</span>,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2018-11-03"</span>,</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-01-22"</span>,</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-02-23"</span>,</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-04-12"</span>,</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>                     <span class="st">"2019-07-01"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
-<section id="map-study-sites-along-river" class="level2">
-<h2 class="anchored" data-anchor-id="map-study-sites-along-river">Map Study Sites Along River</h2>
-<p>eep</p>
+<section id="exploratory-maps" class="level2">
+<h2 class="anchored" data-anchor-id="exploratory-maps">Exploratory Maps</h2>
+<p><strong>True Color Image:</strong></p>
+<p>Assessing true color imagery before NDVI can be useful for quickly recognizing different types of terrain. Here, I created a simple true color image of the Santa Clara River area using one of a single Landsat from June, 2018.</p>
+<div class="cell">
+<details>
+<summary>View Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a true color image</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotRGB</span>(single_landsat_rast, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="at">stretch=</span><span class="st">"hist"</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">"Santa Clara River True Color Image"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="river-ndvi_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Study Site Location Along Santa Clara Watershed:</strong></p>
+<p>The following visualization depicts the Santa Clara River, as well as other rivers within the Santa Clara Watershed. The plant communities (study sites), were added as well for geographical context.</p>
+<div class="cell">
+<details>
+<summary>View Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">## ========== Data Preparation ==========</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># filter VC river data to SC watershed</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>sc_watershed <span class="ot">&lt;-</span> vc_rivers <span class="sc">%&gt;%</span> </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(WATERSHED <span class="sc">==</span> <span class="st">"SANTA CLARA RIVER WATERSHED"</span>) <span class="sc">%&gt;%</span> <span class="co">#filter</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="st">'epsg:32611'</span>) <span class="sc">%&gt;%</span> <span class="co">#reproject</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_crop</span>(study_sites)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># filter state data to counties new watershed</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>ventura <span class="ot">&lt;-</span> states <span class="sc">%&gt;%</span> <span class="fu">st_crop</span>(study_sites) <span class="co">#crop county to watershed</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># create custom color palette</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>phenology_pal <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#EAAC8B"</span>, <span class="st">"#315C2B"</span>, <span class="st">"#315C2B"</span>, <span class="st">"#315C2B"</span>,<span class="st">"#9EA93F"</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="do">## ========== Plot Data Together ==========</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># create map combining watershed, study sites, and counties</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> ventura, <span class="at">fill =</span> <span class="st">'#E7DED9'</span>) <span class="sc">+</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> sc_watershed, <span class="at">color =</span> <span class="st">'dodgerblue'</span>) <span class="sc">+</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> study_sites,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>          <span class="at">mapping =</span> <span class="fu">aes</span>(<span class="at">fill =</span> study_site)) <span class="sc">+</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#EAAC8B"</span>, <span class="st">"#315C2B"</span>, <span class="st">"#315C2B"</span>, <span class="st">"#315C2B"</span>,<span class="st">"#9EA93F"</span>)) <span class="sc">+</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Study Sites Along Santa Clara Watershed"</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Plant Communities"</span>,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>       <span class="at">x=</span><span class="cn">NULL</span>,</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">y=</span><span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill=</span><span class="st">'lightblue'</span>),</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.margin=</span>grid<span class="sc">::</span><span class="fu">unit</span>(<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>), <span class="st">"mm"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="river-ndvi_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
 </section>
 
 
