@@ -1,0 +1,30 @@
+---
+title: 'NDVI Assesment of Santa Clara River Plant Communities'
+author: "Briana Barajas"
+date: "December 15, 2023"
+output: html_document
+format: 
+  html:
+    code-fold: true
+    code-summary: "View Code"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Background
+
+While many organisms in nature experience phenological cycles, plant pheology is one of the most easily recognized. Phenological events for plants include leaf growth, flowering, and leaf death (also known as *senescence*). The timing of these events is based on climate conditions, so that plants may ensure successful reproduction. As the climate changes, phenological cycles in plants can be disrupted. For this reason, changes in plant phenology are used to estimate how ecosystems are responding to climate change.
+
+This analysis utilizes satellite data to estimate the normalized difference vegetation index (NDVI) to examine plant phenology near the Santa Clara River. The Santa Clara River flows from Santa Clarita to Ventura, and remains relatively natural compared to other rivers in California. Additionally, the river provides water for agriculture, and habitat for several endangered plant and animal species. For these reasons, there have been significant efforts to conserve and restore the riparian habitat surrounding the river[^1]. With this in mind, I calculated and analyzed the phenology of the following plant communities:
+
+[^1]: "Santa Clara River." *The Nature Conservancy*, www.nature.org/en-us/get-involved/how-to-help/places-we-protect/the-nature-conservancy-in-california-santa-clara-river-california-con/#:\~:text=The%20Santa%20Clara%20River%20is%20a%20vital%20source%20of%20drinking,bustling%20Los%20Angeles%2DVentura%20region. Accessed 15 Dec. 2023.
+
+-   **riparian forests**: grow along the river, dominated by winter deciduous cottonwood and willow trees
+-   **grasslands**: grow in openspaces, dominated by drought deciduous grasses
+-   **chaparral shrublands**: grow in more arid habitats, dominated by evergreen shrubs
+
+credit: this post is based on a materials developed by Chris Kibler, with additional assistance from Ruth Oliver
+
+## About the Data
