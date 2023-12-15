@@ -1,5 +1,5 @@
 ---
-title: 'NDVI Assesment Around Santa Clara River'
+title: 'NDVI Assessment Around Santa Clara River'
 author: "Briana Barajas"
 date: "December 15, 2023"
 output: html_document
@@ -33,7 +33,7 @@ A shape file of rivers in Ventura County is publicly available via the [Ventura 
 
 ### Landsat Data
 
-The data that will be used to calculate NDVI is from the Landsat Operational Land Image (OLI) sensor. There are 8 total landsat `.tif` files that contain level 3 surface reflectance products where erroneous values were set to NA, the scale factor is set to 100, and bands 2-7 are present. The date of collection is at the end of each file name.
+The data that will be used to calculate NDVI is from the Landsat Operational Land Imager (OLI) sensor. There are 8 total landsat `.tif` files that contain level 3 surface reflectance products where erroneous values were set to NA, the scale factor is set to 100, and bands 2-7 are present. The date of collection is at the end of each file name.
 
 ### Study Sites
 
